@@ -15,6 +15,7 @@ CREATE OR REPLACE PACKAGE APPS.XXPB_SALESFORCE_ORDER_ENTRY_PKG_BY7 is
   c_status_advert   constant varchar2(1) := '3';
   vg_user_id        number   := fnd_profile.value('USER_ID');
   MSG_ERRO                                VARCHAR2(500)   := '';
+  
   SQL_ERRO_COD                            VARCHAR2(20)    := '';
   SQL_ERRO_MSG                            VARCHAR2(2000)  := '';
   RETORNO_VALIDO                CONSTANT  VARCHAR2(20)    := 'OK';
