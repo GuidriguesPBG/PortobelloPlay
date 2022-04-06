@@ -1,0 +1,28 @@
+SELECT NULL CUST_ACCT_SITE_ID,
+       'SP' || acct.CUST_ACCOUNT_ID EXTERNAL_ID,
+       GREATEST (ACCT.LAST_UPDATE_DATE, PART.LAST_UPDATE_DATE)
+          LAST_UPDATE_DATE,
+       'Specifier' TYPE,
+       'Auxiliar Account' RECORDTYPEID,
+       TRIM (part.party_name) AS NAME,
+       NULL TAXID__C,
+       NULL INDUSTRY,
+       NULL PARENTID,
+       ACCT.CREATION_DATE REGISTRATIONDATE,
+       NULL LOCATION_ID,
+       NULL TAXEMAIL__C,
+       NULL TAXPAYERTYPE__C,
+       NULL STATEINSCRIPTION__C,
+       NULL OWNERID,
+       NULL GLOBAL_ATTRIBUTE3,
+       NULL GLOBAL_ATTRIBUTE4,
+       NULL GLOBAL_ATTRIBUTE5,
+       NULL PRIMARY_FLAG,
+       NULL CUST_ACCOUNT_ID,
+       NULL SALESCHANEL,
+       NULL NATIONALACCOUNT
+  FROM hz_parties part, hz_cust_accounts_all acct
+ WHERE     acct.party_id = part.party_id
+       AND acct.customer_class_code IN ('19', '28', '29', '30', '31')
+       AND GREATEST (ACCT.LAST_UPDATE_DATE, PART.LAST_UPDATE_DATE) >=
+              TO_DATE (P_LAST_DATE, 'YYYY-MM-DD HH24:MI:SS')
