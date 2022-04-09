@@ -88,7 +88,7 @@ CREATE OR REPLACE PROCEDURE APPS.PB_CONCIERGE_ESTOQUE (p_jsondata in blob) AS
                             JOIN
                                mtl_system_items_b ite
                             ON     flok.LOOKUP_CODE = ite.segment1
-                               AND organization_id = 43
+                               AND organization_id = pb_master_organization_id
                       WHERE     flok.lookup_type =
                                    'ONT_ATP_PRODUTOS_CALCULA_DMF'
                             AND flok.ENABLED_FLAG = 'Y'
@@ -200,6 +200,9 @@ ORDER BY a.cod_produto_ora, a.COD_DEPOSITO, a.COD_TONALIDADE_CALIBRE;
   l_rows           number := 0;
   l_total_regs number := 0;
   l_total_pages    number := 0;
+  
+  p_last_date varchar2(20);
+  
   PROCEDURE defineTotalPages IS
   BEGIN
     if nvl(l_tipo_retorno,0) = 10 then
@@ -210,16 +213,25 @@ ORDER BY a.cod_produto_ora, a.COD_DEPOSITO, a.COD_TONALIDADE_CALIBRE;
     if nvl(l_tipo_retorno,0) = 11 then
         SELECT COUNT(*) into l_total_regs
           FROM (SELECT LAST_UPDATE_DATE 
-                  FROM    apps.xxpb_estoque_api stk
-                 WHERE COD_DEPOSITO NOT IN ('ELA')--and stk.COD_PRODUTO_ORA <> '26110E'
-                 and (
-                    REPLACE (TO_CHAR (SALDO_PBSHOP), ',', '.') <> '0'
-                 or 
-                    REPLACE (TO_CHAR (SALDO_DISPONIVEL), ',', '.') <> '0'
-                 or
-                    REPLACE (TO_CHAR (SALDO_EXPORTACAO), ',', '.') <> '0'
-                 )
-               );    
+                 FROM    apps.xxpb_estoque_api stk
+                  INNER JOIN (SELECT MEANING COD, LOOKUP_CODE ID FROM FND_LOOKUP_VALUES WHERE     language = USERENV ('LANG') AND enabled_flag = 'Y' AND lookup_type = 'ONT_DEPOSITOS_SALES_PB') DEP ON STK.COD_DEPOSITO = DEP.COD
+                 WHERE
+                    SALDO_PBSHOP> 0 OR SALDO_DISPONIVEL > 0 OR SALDO_EXPORTACAO > 0   
+				UNION ALL 
+				SELECT LAST_UPDATE_DATE
+				 FROM APPS.XXPB_ESTOQUE_API_ZERO STK
+				  INNER JOIN (SELECT MEANING COD, LOOKUP_CODE ID FROM FND_LOOKUP_VALUES WHERE     language = USERENV ('LANG') AND enabled_flag = 'Y' AND lookup_type = 'ONT_DEPOSITOS_SALES_PB') DEP ON STK.COD_DEPOSITO = DEP.COD
+				 WHERE    (FLAG_EXC = 1 and p_last_date is not null)
+			     OR (    FLAG_STK = 0
+                   AND NOT EXISTS
+                              (SELECT 1
+                                 FROM XXPB_ESTOQUE_API
+                                WHERE     COD_PRODUTO_ORA =
+                                             STK.COD_PRODUTO_ORA
+                                      AND COD_DEPOSITO = STK.COD_DEPOSITO
+                                      AND SALDO_DISPONIVEL > 0))
+				)
+		WHERE last_update_date >= to_date(p_last_date,'YYYY-MM-DD HH24:MI:SS') or p_last_date is null;    
     end if;    
 
     if P_ROWS > 0 then
@@ -277,6 +289,7 @@ BEGIN
                  columns(tipo_retorno number path '$.tipo_retorno'
                         ,numPage number path '$.numPage'
                         ,numRows number path '$.numRows'
+						,last_date varchar2(20) path '$.last_date'
                         ,cod_produto   varchar2(30) path '$.cod_produto'
                         ,list_produtos_in varchar2(4000) path '$.list_produtos_in'
                         ,list_produtos_in2 varchar2(4000) path '$.list_produtos_in2'
@@ -296,6 +309,7 @@ BEGIN
      ) LOOP
         l_tipo_retorno := r_requisicao.tipo_retorno;
         p_page := r_requisicao.numPage;
+		p_last_date := r_requisicao.last_date;
         p_rows := r_requisicao.numRows;
         l_rows := r_requisicao.numRows;
         l_cd_produto := r_requisicao.cod_produto;
@@ -366,48 +380,8 @@ BEGIN
                       SELECT
                         LAST_UPDATE_DATE,
                         replace('PRJ' ||trim(STK.DES_CD) || trim(STK.COD_ITEM),',','') AS ExternalCode__c,
-                        CASE DES_CD
-                                          WHEN 'P11' THEN '1717'
-                                          WHEN 'PUC' THEN '1716'
-                                          WHEN 'EET' THEN '1719'
-                                          WHEN 'PNT' THEN '1759'
-                                          WHEN 'PPB' THEN '1761'
-                                          WHEN 'PMA' THEN '1819'
-                                          WHEN 'EEM' THEN '1860'
-                                          WHEN 'PPE' THEN '1881'
-                                          WHEN 'CDC' THEN '1940'
-                                          WHEN 'CWB' THEN '1960'
-                                          WHEN 'CSA' THEN '1980'
-                                          WHEN 'CIT' THEN '1981'
-                                          WHEN 'EEA' THEN '1982'
-                                          WHEN 'CFR' THEN '1986'
-                                          WHEN 'CGO' THEN '2006'
-                                          WHEN 'CPR' THEN '2066'
-                                          WHEN 'CJU' THEN '1900'
-                                          ELSE '1719'
-                                       END
-                                          AS WarehouseCode__c,
-                                       CASE DES_CD
-                                          WHEN 'P11' THEN '1717'
-                                          WHEN 'PUC' THEN '1716'
-                                          WHEN 'EET' THEN '1719'
-                                          WHEN 'PNT' THEN '1759'
-                                          WHEN 'PPB' THEN '1761'
-                                          WHEN 'PMA' THEN '1819'
-                                          WHEN 'EEM' THEN '1860'
-                                          WHEN 'PPE' THEN '1881'
-                                          WHEN 'CDC' THEN '1940'
-                                          WHEN 'CWB' THEN '1960'
-                                          WHEN 'CSA' THEN '1980'
-                                          WHEN 'CIT' THEN '1981'
-                                          WHEN 'EEA' THEN '1982'
-                                          WHEN 'CFR' THEN '1986'
-                                          WHEN 'CGO' THEN '2006'
-                                          WHEN 'CPR' THEN '2066'
-                                          WHEN 'CJU' THEN '1900'
-                                          ELSE '1719'
-                                       END
-                                          AS DESCRICAODEPOSITO__C,
+						DEP.ID AS WarehouseCode__c,
+						DEP.ID AS DESCRICAODEPOSITO__C,
                         replace(trim(STK.DES_CD) || '-' || trim(STK.COD_ITEM),',','') AS NAME,  
                         stk.cod_item as COD_PRODUTO_ORA,  
                           (SELECT DESCRIPTION FROM fnd_lookup_values 
@@ -521,6 +495,7 @@ BEGIN
                         REPLACE(NVL(STK.PTBL_P10,0),',','.') ProjectedBalance10__c,
                         REPLACE(STK.SHOP_P10,',','.') ProjectedBalance10PbShop__c
                         FROM TMP_PROJETADO_SALESFORCE STK
+						INNER JOIN (SELECT MEANING COD, LOOKUP_CODE ID FROM FND_LOOKUP_VALUES WHERE     language = USERENV ('LANG') AND enabled_flag = 'Y' AND lookup_type = 'ONT_DEPOSITOS_SALES_PB')DEP ON STK.DES_CD = DEP.COD
                         Order by LAST_UPDATE_DATE asc offset l_page rows fetch next l_rows rows only
                     )  loop
                         l_item.put('LAST_UPDATE_DATE', prod.LAST_UPDATE_DATE);
@@ -595,99 +570,121 @@ BEGIN
              defineTotalPages();
 
              for prod in (
-                            SELECT *
-                              FROM (SELECT LAST_UPDATE_DATE, 
-                                        REPLACE (
-                                              REPLACE (
-                                                 REPLACE (
-                                                    REPLACE ( 'STK' ||
-                                                       TRIM (
-                                                             stk.cod_deposito
-                                                          || '-'
-                                                          || stk.cod_tonalidade_calibre
-                                                          || '-'
-                                                          || stk.cod_produto_ora),
-                                                       ',',
-                                                       ''),
-                                                    CHR (10)),
-                                                 CHR (13)),
-                                              CHR (9))
-                                              AS ExternalCode__c,
-                                           CASE COD_DEPOSITO
-                                              WHEN 'P11' THEN '1717'
-                                              WHEN 'PUC' THEN '1716'
-                                              WHEN 'EET' THEN '1719'
-                                              WHEN 'PNT' THEN '1759'
-                                              WHEN 'PPB' THEN '1761'
-                                              WHEN 'PMA' THEN '1819'
-                                              WHEN 'EEM' THEN '1860'
-                                              WHEN 'PPE' THEN '1881'
-                                              WHEN 'CDC' THEN '1940'
-                                              WHEN 'CWB' THEN '1960'
-                                              WHEN 'CSA' THEN '1980'
-                                              WHEN 'CIT' THEN '1981'
-                                              WHEN 'EEA' THEN '1982'
-                                              WHEN 'CFR' THEN '1986'
-                                              WHEN 'CGO' THEN '2006'
-                                              WHEN 'CPR' THEN '2066'
-                                              WHEN 'CJU' THEN '1900'
-                                              ELSE '1719'
-                                           END
-                                              AS WarehouseCode__c,
-                                           CASE COD_DEPOSITO
-                                              WHEN 'P11' THEN '1717'
-                                              WHEN 'PUC' THEN '1716'
-                                              WHEN 'EET' THEN '1719'
-                                              WHEN 'PNT' THEN '1759'
-                                              WHEN 'PPB' THEN '1761'
-                                              WHEN 'PMA' THEN '1819'
-                                              WHEN 'EEM' THEN '1860'
-                                              WHEN 'PPE' THEN '1881'
-                                              WHEN 'CDC' THEN '1940'
-                                              WHEN 'CWB' THEN '1960'
-                                              WHEN 'CSA' THEN '1980'
-                                              WHEN 'CIT' THEN '1981'
-                                              WHEN 'EEA' THEN '1982'
-                                              WHEN 'CFR' THEN '1986'
-                                              WHEN 'CGO' THEN '2006'
-                                              WHEN 'CPR' THEN '2066'
-                                              WHEN 'CJU' THEN '1900'
-                                              ELSE '1719'
-                                           END
-                                              AS DESCRICAODEPOSITO__C,
-                                           TRIM (
-                                              REPLACE (
-                                                 REPLACE (
-                                                    REPLACE (REPLACE (COD_TONALIDADE_CALIBRE, CHR (10)),
-                                                             CHR (13)),
-                                                    CHR (9)),
-                                                 ',',
-                                                 ''))
-                                              AS CODTONALIDADECALIBRE__C,
-                                           TRIM (
-                                              REPLACE (
-                                                 REPLACE (
-                                                    REPLACE (
-                                                       REPLACE (
-                                                          COD_DEPOSITO || ' - ' || COD_TONALIDADE_CALIBRE,
-                                                          CHR (10)),
-                                                       CHR (13)),
-                                                    CHR (9)),
-                                                 ',',
-                                                 ''))
-                                              AS NAME,
-                                           stk.cod_produto_ora as COD_PRODUTO_ORA,
-                                           REPLACE (TO_CHAR (SALDO_PBSHOP), ',', '.')
-                                              AS BALANCEPORTOBELLOSHOP__C,
-                                           REPLACE (TO_CHAR (SALDO_DISPONIVEL), ',', '.') AS BALANCE__C,
-                                           REPLACE (TO_CHAR (SALDO_EXPORTACAO), ',', '.') AS EXPORTBALANCE__C,
-                                           0 AS STOCKFRACTION__C                    -- Percentual de ponta
-                                      FROM    apps.xxpb_estoque_api stk
-                                     WHERE COD_DEPOSITO NOT IN ('ELA')--and stk.COD_PRODUTO_ORA <> '26110E'
-                                   )
-                             WHERE (   balanceportobelloshop__c <> '0'
-                                    OR balance__c <> '0'
-                                    OR exportBalance__c <> '0')
+							SELECT *
+							  FROM (SELECT 0 AS TIPO, 0 AS FLAG_EXC,
+										   LAST_UPDATE_DATE,
+										   REPLACE (
+											  REPLACE (
+												 REPLACE (
+													REPLACE (
+														  'STK'
+													   || TRIM (
+																stk.cod_deposito
+															 || '-'
+															 || stk.cod_tonalidade_calibre
+															 || '-'
+															 || stk.cod_produto_ora),
+													   ',',
+													   ''),
+													CHR (10)),
+												 CHR (13)),
+											  CHR (9))
+											  AS ExternalCode__c,
+										   DEP.ID AS WarehouseCode__c,
+										   DEP.ID AS DESCRICAODEPOSITO__C,
+										   TRIM (
+											  REPLACE (
+												 REPLACE (
+													REPLACE (REPLACE (COD_TONALIDADE_CALIBRE, CHR (10)),
+															 CHR (13)),
+													CHR (9)),
+												 ',',
+												 ''))
+											  AS CODTONALIDADECALIBRE__C,
+										   TRIM (
+											  REPLACE (
+												 REPLACE (
+													REPLACE (
+													   REPLACE (
+														  COD_DEPOSITO || ' - ' || COD_TONALIDADE_CALIBRE,
+														  CHR (10)),
+													   CHR (13)),
+													CHR (9)),
+												 ',',
+												 ''))
+											  AS NAME,
+										   stk.cod_produto_ora AS COD_PRODUTO_ORA,
+										   REPLACE (TO_CHAR (SALDO_PBSHOP), ',', '.')
+											  AS BALANCEPORTOBELLOSHOP__C,
+										   REPLACE (TO_CHAR (SALDO_DISPONIVEL), ',', '.') AS BALANCE__C,
+										   REPLACE (TO_CHAR (SALDO_EXPORTACAO), ',', '.') AS EXPORTBALANCE__C,
+										   0 AS STOCKFRACTION__C                    -- Percentual de ponta
+									  FROM apps.xxpb_estoque_api stk
+									  INNER JOIN (SELECT MEANING COD, LOOKUP_CODE ID FROM FND_LOOKUP_VALUES WHERE     language = USERENV ('LANG') AND enabled_flag = 'Y' AND lookup_type = 'ONT_DEPOSITOS_SALES_PB') DEP ON STK.COD_DEPOSITO = DEP.COD
+									UNION ALL
+									SELECT 1 AS TIPO, FLAG_EXC AS FLAG_EXC,
+										   LAST_UPDATE_DATE,
+										   REPLACE (
+											  REPLACE (
+												 REPLACE (
+													REPLACE (
+														  'STK'
+													   || TRIM (
+																stk.cod_deposito
+															 || '-'
+															 || stk.cod_tonalidade_calibre
+															 || '-'
+															 || stk.cod_produto_ora),
+													   ',',
+													   ''),
+													CHR (10)),
+												 CHR (13)),
+											  CHR (9))
+											  AS ExternalCode__c,
+										   DEP.ID AS WarehouseCode__c,
+										   DEP.ID AS DESCRICAODEPOSITO__C,
+										   TRIM (
+											  REPLACE (
+												 REPLACE (
+													REPLACE (REPLACE (COD_TONALIDADE_CALIBRE, CHR (10)),
+															 CHR (13)),
+													CHR (9)),
+												 ',',
+												 ''))
+											  AS CODTONALIDADECALIBRE__C,
+										   TRIM (
+											  REPLACE (
+												 REPLACE (
+													REPLACE (
+													   REPLACE (
+														  COD_DEPOSITO || ' - ' || COD_TONALIDADE_CALIBRE,
+														  CHR (10)),
+													   CHR (13)),
+													CHR (9)),
+												 ',',
+												 ''))
+											  AS NAME,
+										   stk.cod_produto_ora AS COD_PRODUTO_ORA,
+										   '0' AS BALANCEPORTOBELLOSHOP__C,
+										   '0' AS BALANCE__C,
+										   '0' AS EXPORTBALANCE__C,
+										   0 AS STOCKFRACTION__C
+									  FROM APPS.XXPB_ESTOQUE_API_ZERO STK
+									  INNER JOIN (SELECT MEANING COD, LOOKUP_CODE ID FROM FND_LOOKUP_VALUES WHERE     language = USERENV ('LANG') AND enabled_flag = 'Y' AND lookup_type = 'ONT_DEPOSITOS_SALES_PB') DEP ON STK.COD_DEPOSITO = DEP.COD
+									 WHERE    (FLAG_EXC = 1 and p_last_date is not null)
+										   OR (    FLAG_STK = 0
+											   AND NOT EXISTS
+														  (SELECT 1
+															 FROM XXPB_ESTOQUE_API
+															WHERE     COD_PRODUTO_ORA =
+																		 STK.COD_PRODUTO_ORA
+																  AND COD_DEPOSITO = STK.COD_DEPOSITO
+																  AND SALDO_DISPONIVEL > 0)))
+							 WHERE (   (   balanceportobelloshop__c <> '0'
+										OR balance__c <> '0'
+										OR exportBalance__c <> '0')
+									OR tipo = 1)
+							 and (last_update_date >= to_date(p_last_date,'YYYY-MM-DD HH24:MI:SS') or p_last_date is null)
                              Order by LAST_UPDATE_DATE asc offset l_page rows fetch next l_rows rows only
                                                                                      
                                     )  loop
@@ -702,6 +699,11 @@ BEGIN
                         l_item.put('BALANCE__C', prod.BALANCE__C);
                         l_item.put('EXPORTBALANCE__C', prod.EXPORTBALANCE__C);
                         l_item.put('STOCKFRACTION__C', prod.STOCKFRACTION__C);
+						if prod.FLAG_EXC = 0 THEN 
+							l_item.put('EXCLUDE', 'N');
+						ELSE
+							l_item.put('EXCLUDE', 'Y');
+						END IF;
                         $IF dbms_db_version.ver_le_12 $THEN
                             l_list_estoque.append(l_item.to_json_value);
                         $ELSE
@@ -721,7 +723,7 @@ BEGIN
 
           for prod in ( Select msi.segment1 
                           from mtl_system_items_b msi
-                         where msi.organization_id = 43
+                         where msi.organization_id = pb_master_organization_id
                            and msi.segment1 like l_cd_produto||'%')  loop
 
                  --Verificar se tem Projecao..

@@ -1,0 +1,3 @@
+Concorrente     : PortobelloPlay - Pré-Processamento - Cliente OV
+Executável      : PB_SALESPLAY_CLIENT_OV
+Responsabilidade: *PB - Operador VOP
