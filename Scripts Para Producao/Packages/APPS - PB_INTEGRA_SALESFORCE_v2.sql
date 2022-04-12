@@ -29,7 +29,7 @@ IS
                                   p_completa   IN     NUMBER);
 
 
-   PROCEDURE p_gera_dados_estoque_zero (errbuf          OUT VARCHAR2,
+   PROCEDURE  (errbuf          OUT VARCHAR2,
                                         errcode         OUT VARCHAR2,
                                         p_completa   IN     NUMBER);
 
@@ -2770,12 +2770,11 @@ order by l.attribute11
       END IF;
 
 
-      SELECT MAX (created_date) - 15 / 1440
-        INTO v_last_exec
-        FROM apps.XXPB_HIST_PO_CLIENT;
+      --SELECT MAX (created_date) - 15 / 1440
+      --  INTO v_last_exec
+      --  FROM apps.XXPB_HIST_PO_CLIENT;
 
-      UPDATE APPS.XXPB_HIST_PO_CLIENT
-         SET PROCESSED = 0;
+      UPDATE APPS.XXPB_HIST_PO_CLIENT SET PROCESSED = 0;
 
 
 
@@ -2793,8 +2792,7 @@ order by l.attribute11
                       AND OHA.ORDER_CATEGORY_CODE = 'ORDER'
                       AND (   NVL (p_completa, 0) = 1
                            OR (    NVL (p_completa, 0) = 0
-                               AND OHA.ORDERED_DATE >=
-                                      NVL (v_last_exec, SYSDATE - 7)))
+                           AND OHA.ORDERED_DATE >= NVL (null, (SELECT MAX (created_date) - 15 / 1440 FROM apps.XXPB_HIST_PO_CLIENT))))
                       AND OHA.SALES_CHANNEL_CODE IN
                              ('1',
                               '2',
