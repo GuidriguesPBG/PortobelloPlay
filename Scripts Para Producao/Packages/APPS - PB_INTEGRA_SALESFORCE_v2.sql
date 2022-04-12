@@ -2176,14 +2176,31 @@ order by l.attribute11
                                      INNER JOIN mtl_system_items_b msi
                                         ON a.inventory_item_id =
                                               msi.inventory_item_id
-                                     LEFT JOIN (SELECT *
-                                                  FROM apps.OM_SALDO_PRODUTO_ATP_JB_CD_V2
-                                                 WHERE NVL (vol_meta, 0) > 0) ab
-                                        ON     msi.segment1 = ab.cod_item
-                                           AND a.id_periodo = ab.id_periodo
-                               WHERE msi.organization_id =
+                              WHERE msi.organization_id =
                                         pb_master_organization_id
-                            GROUP BY A.ID_PERIODO, MSI.SEGMENT1) A PIVOT (SUM (
+                              GROUP BY A.ID_PERIODO, MSI.SEGMENT1
+                            UNION ALL 
+                              SELECT A.ID_PERIODO,
+                                    DEP.DESCR AS DES_CD,
+                                    msi.segment1 AS COD_ITEM,
+                                    CASE WHEN SUM (QT_SALDO) < 0 THEN 0 ELSE SUM (QT_SALDO) END
+                                        AS QT_SALDO,
+                                    MAX (
+                                        TO_DATE (TRUNC (A.LAST_UPDATE_DATE) || ' 23:59:59',
+                                                'DD/MM/YYYY HH24:MI:SS'))
+                                        AS LAST_UPDATE_DATE
+                                FROM apps.OM_SALDO_PRODUTO_ATP_POINTER a
+                                    INNER JOIN mtl_system_items_b msi
+                                        ON a.inventory_item_id = msi.inventory_item_id
+                                    INNER JOIN (SELECT LOOKUP_CODE ID, MEANING DESCR
+                                                  FROM FND_LOOKUP_VALUES
+                                                  WHERE     language = USERENV ('LANG')
+                                                        AND enabled_flag = 'Y'
+                                                        AND lookup_type = 'ONT_DEPOSITOS_SALES_PB') DEP
+                                        ON DEP.ID = A.ID_DEPOSITO
+                              WHERE msi.organization_id = pb_master_organization_id
+                              GROUP BY A.ID_PERIODO, MSI.SEGMENT1, DEP.DESCR                                                        
+                            ) A PIVOT (SUM (
                                                                              QT_SALDO) QT_SALDO
                                                                    FOR ID_PERIODO
                                                                    IN  (1,

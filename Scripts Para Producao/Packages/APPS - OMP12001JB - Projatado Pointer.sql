@@ -1,6 +1,6 @@
 CREATE OR REPLACE PACKAGE APPS."OMP12001JB" is
 
-  -- Versão Antiga
+  -- Versï¿½o Antiga
   vg_saldo_estoque      NUMBER;
   vg_calcula_atp        VARCHAR2(1) DEFAULT 'Y';
   vg_usa_maior_dmf      VARCHAR2(1) DEFAULT 'Y';
@@ -43,7 +43,7 @@ CREATE OR REPLACE PACKAGE APPS."OMP12001JB" is
   --Seleciona o grupo de horizonte do saldo
   FUNCTION fnd_grupo_horizonte_saldo RETURN NUMBER;
 
-  --Seleciona a data final do período informado
+  --Seleciona a data final do perï¿½odo informado
   FUNCTION fnd_data_fim_periodo (p_id_periodo IN NUMBER)RETURN DATE;
 
   --Classifica em qual periodo a data se enquadra
@@ -90,7 +90,7 @@ CREATE OR REPLACE PACKAGE APPS."OMP12001JB" is
   -- Busca maior DMF COVID. Chamado: 131546 - Alexandre Oliveira.
   FUNCTION fnd_maior_data_covid (p_header_id IN NUMBER) RETURN DATE;
 
-  -- Calcula data promessa, chama a função com mais parâmetros chamando o cálculo p_data_retorno = DP
+  -- Calcula data promessa, chama a funï¿½ï¿½o com mais parï¿½metros chamando o cï¿½lculo p_data_retorno = DP
   FUNCTION fnd_data_promessa_item ( p_inventory_item_id  IN NUMBER,
                                     p_organization_id    IN NUMBER,
                                     p_primary_uom_code   IN VARCHAR2,
@@ -131,7 +131,7 @@ CREATE OR REPLACE PACKAGE APPS."OMP12001JB" is
                                           , p_errbuf          IN OUT VARCHAR2
                                           , p_order_number    IN VARCHAR2 );
 
-  -- Verifica disponibildade de saldo com restrição para ATP COVID 19
+  -- Verifica disponibildade de saldo com restriï¿½ï¿½o para ATP COVID 19
   FUNCTION fnd_saldo_disp_restricao(p_organization_id       IN NUMBER
                                     , p_inventory_item_id   IN NUMBER
                                     , p_id_familia          IN VARCHAR2
@@ -140,7 +140,7 @@ CREATE OR REPLACE PACKAGE APPS."OMP12001JB" is
                                     , p_qtd_ordered         IN VARCHAR2
                                     , p_header_id           IN NUMBER     ) RETURN VARCHAR2;
 
-  -- Retorna se existe saldo disponível para os produtos do grupo de uma ordem de venda.
+  -- Retorna se existe saldo disponï¿½vel para os produtos do grupo de uma ordem de venda.
   FUNCTION fnd_saldo_disp_grupo(p_header_id           IN NUMBER
                                 , p_grupo             IN VARCHAR2
                                 , p_organization_id   IN NUMBER
@@ -159,7 +159,7 @@ CREATE OR REPLACE PACKAGE APPS."OMP12001JB" is
   -- Verifica se tem reserva para linha da ordem de venda.
   FUNCTION valida_reserva_dmf ( p_line_id IN NUMBER ) RETURN VARCHAR2;
 
-  -- Grava histórico de cálculo da DMF
+  -- Grava histï¿½rico de cï¿½lculo da DMF
   PROCEDURE fnd_historico_dmf(p_header_id                 IN NUMBER
                               , p_line_id                 IN NUMBER
                               , p_inventory_item_id       IN NUMBER
@@ -181,7 +181,7 @@ CREATE OR REPLACE PACKAGE APPS."OMP12001JB" is
 
 
 
-  -- Versão Nova
+  -- Versï¿½o Nova
   FUNCTION fnd_qtd_periodo_dec RETURN NUMBER;
   --
   FUNCTION fnd_horizonte_periodo_dec (p_horiz_periodo IN VARCHAR2
@@ -258,7 +258,7 @@ GRANT EXECUTE ON APPS.OMP12001JB TO APPSR;
 GRANT EXECUTE ON APPS.OMP12001JB TO ONT WITH GRANT OPTION;
 
 CREATE OR REPLACE PACKAGE BODY APPS."OMP12001JB" IS
---****  VERSÃO ANTIGA **********************************************************************
+--****  VERSï¿½O ANTIGA **********************************************************************
 
 FUNCTION fnd_dmf_linha (p_line_id IN NUMBER) RETURN DATE IS
 
@@ -2869,7 +2869,7 @@ EXCEPTION
 END;
 
 
---****  VERSÃO NOVA **********************************************************************
+--****  VERSï¿½O NOVA **********************************************************************
 FUNCTION fnd_qtd_periodo_dec RETURN NUMBER IS
   --
 CURSOR c_periodo IS
@@ -2879,7 +2879,7 @@ CURSOR c_periodo IS
   AND    enabled_flag        = 'Y'
   AND    security_group_id   = 0
   AND    view_application_id = 660
-  AND    meaning             = 1 --Periodos Válidos para Decêndios
+  AND    meaning             = 1 --Periodos Vï¿½lidos para Decï¿½ndios
   AND    lookup_type         = 'ONT_ATP_PARAMETRO_SALDO_DEC_PB'
   AND    Trunc(SYSDATE) BETWEEN Trunc(Nvl(start_date_active, SYSDATE))
                             AND Trunc(Nvl(end_date_active, SYSDATE))
@@ -2889,7 +2889,7 @@ CURSOR c_periodo IS
   --
 BEGIN
   --
-  --Seleciona a quantidade de períodos
+  --Seleciona a quantidade de perï¿½odos
   OPEN c_periodo;
   FETCH c_periodo
   INTO w_qt_periodo;
@@ -2899,7 +2899,7 @@ BEGIN
   --
 EXCEPTION
   WHEN OTHERS THEN
-    raise_application_error(-20000, 'Erro ao selecionar os perÃ­odos vÃ¡lidos decêndios - '||SQLERRM);
+    raise_application_error(-20000, 'Erro ao selecionar os perÃ­odos vÃ¡lidos decï¿½ndios - '||SQLERRM);
 END fnd_qtd_periodo_dec;
 --
 --**************************************************************************
@@ -2913,7 +2913,7 @@ CURSOR c_transitorio IS
   AND    enabled_flag        = 'Y'
   AND    security_group_id   = 0
   AND    view_application_id = 660
-  AND    meaning             = 6 --Periodos Válidos para Decêndios
+  AND    meaning             = 6 --Periodos Vï¿½lidos para Decï¿½ndios
   AND    lookup_type         = 'ONT_ATP_PARAMETRO_SALDO_DEC_PB'
   AND    Trunc(SYSDATE) BETWEEN Trunc(Nvl(start_date_active, SYSDATE))
                             AND Trunc(Nvl(end_date_active, SYSDATE))
@@ -2923,7 +2923,7 @@ CURSOR c_transitorio IS
   --
 BEGIN
   --
-  --Seleciona a quantidade de períodos
+  --Seleciona a quantidade de perï¿½odos
   OPEN c_transitorio;
   FETCH c_transitorio
   INTO w_qt_periodo;
@@ -2933,7 +2933,7 @@ BEGIN
   --
 EXCEPTION
   WHEN OTHERS THEN
-    raise_application_error(-20000, 'Erro ao selecionar os perÃ­odos vÃ¡lidos decêndios - '||SQLERRM);
+    raise_application_error(-20000, 'Erro ao selecionar os perÃ­odos vÃ¡lidos decï¿½ndios - '||SQLERRM);
 END fnd_considera_transitorio;
 --
 --**************************************************************************
@@ -2947,7 +2947,7 @@ CURSOR c_transitorio IS
   AND    enabled_flag        = 'Y'
   AND    security_group_id   = 0
   AND    view_application_id = 660
-  AND    meaning             = 7 --Periodos Válidos para Decêndios
+  AND    meaning             = 7 --Periodos Vï¿½lidos para Decï¿½ndios
   AND    lookup_type         = 'ONT_ATP_PARAMETRO_SALDO_DEC_PB'
   AND    Trunc(SYSDATE) BETWEEN Trunc(Nvl(start_date_active, SYSDATE))
                             AND Trunc(Nvl(end_date_active, SYSDATE))
@@ -2957,7 +2957,7 @@ CURSOR c_transitorio IS
   --
 BEGIN
   --
-  --Seleciona a quantidade de períodos
+  --Seleciona a quantidade de perï¿½odos
   OPEN c_transitorio;
   FETCH c_transitorio
   INTO w_qt_periodo;
@@ -2967,7 +2967,7 @@ BEGIN
   --
 EXCEPTION
   WHEN OTHERS THEN
-    raise_application_error(-20000, 'Erro ao selecionar os perÃ­odos vÃ¡lidos decêndios - '||SQLERRM);
+    raise_application_error(-20000, 'Erro ao selecionar os perÃ­odos vÃ¡lidos decï¿½ndios - '||SQLERRM);
 END fnd_historico_transitorio;
 --
 --**************************************************************************
@@ -3007,7 +3007,7 @@ begin
               AND MS.inventory_item_id = p_item
     GROUP BY SYSDATE, MS.inventory_item_id, moqd.lot_number, 'FRONTEIRA';
 
-    --Seleciona a quantidade em estoque Fábrica
+    --Seleciona a quantidade em estoque Fï¿½brica
     INSERT INTO OM_SALDO_PRODUTO_ATP_TRANSIT (DATA_CREATED, INVENTORY_ITEM_ID, LOT_NUMBER, QUANTITY, TIPO) 
     SELECT SYSDATE, MS.inventory_item_id, moqd.lot_number, sum(moqd.primary_transaction_quantity), 'FABRICA'
       FROM mtl_onhand_quantities_detail moqd,
@@ -3044,7 +3044,7 @@ CURSOR c_horiz_periodo IS
   AND    enabled_flag        = 'Y'
   AND    security_group_id   = 0
   AND    view_application_id = 660
-  AND    lookup_code         = p_horiz_periodo --Horizonte do Período
+  AND    lookup_code         = p_horiz_periodo --Horizonte do Perï¿½odo
   AND    lookup_type         = 'ONT_ATP_HORIZONTE_SALDO_DEC_PB'
   AND Trunc(SYSDATE) BETWEEN Trunc(Nvl(start_date_active, SYSDATE))
                          AND Trunc(Nvl(end_date_active, SYSDATE))
@@ -3127,7 +3127,7 @@ BEGIN
   --
 EXCEPTION
   WHEN OTHERS THEN
-    raise_application_error(-20000, 'Erro ao selecionar o grupo de horizonte válido - Decêndio - '||SQLERRM);
+    raise_application_error(-20000, 'Erro ao selecionar o grupo de horizonte vï¿½lido - Decï¿½ndio - '||SQLERRM);
 END fnd_grupo_horizonte_saldo_dec;
 --
 --**************************************************************************
@@ -3196,7 +3196,7 @@ BEGIN
   --
   FOR i IN 1..w_qtd_periodos_mes LOOP
     --
-    IF To_Number(To_Char(SYSDATE,'DD')) <= fnd_horizonte_periodo_dec(i,'ATE') THEN -- dia de hoje está no decêndio "i"
+    IF To_Number(To_Char(SYSDATE,'DD')) <= fnd_horizonte_periodo_dec(i,'ATE') THEN -- dia de hoje estï¿½ no decï¿½ndio "i"
       --
       w_ini_dec := To_Date(To_Char(fnd_horizonte_periodo_dec(i,'DE'),'00') || To_Char(SYSDATE,'MMYYYY'), 'DDMMYYYY');
       EXIT;
@@ -3205,7 +3205,7 @@ BEGIN
     --
   END LOOP;
   --
-  IF p_carteira = 'S' THEN -- Se for Carteira, começa um decêndio a mais do que Produção
+  IF p_carteira = 'S' THEN -- Se for Carteira, comeï¿½a um decï¿½ndio a mais do que Produï¿½ï¿½o
     --
     IF To_Number(To_Char(w_ini_dec,'DD')) >= 21 THEN  --$$$$$$$$$fnd_horizonte_periodo_dec(w_qtd_periodos_mes,'DE') THEN
       --
@@ -3267,7 +3267,7 @@ BEGIN
   --
 EXCEPTION
   WHEN OTHERS THEN
-    raise_application_error(-20000, 'Erro ao selecionar data final do período - '||SQLERRM);
+    raise_application_error(-20000, 'Erro ao selecionar data final do perï¿½odo - '||SQLERRM);
 END fnd_data_fim_periodo_dec;
 --
 --**************************************************************************
@@ -3280,7 +3280,7 @@ CURSOR c_dias_seguranca IS
   AND    enabled_flag        = 'Y'
   AND    security_group_id   = 0
   AND    view_application_id = 660
-  AND    meaning             = 5 --Dias Segurança Prod
+  AND    meaning             = 5 --Dias Seguranï¿½a Prod
   AND    lookup_type         = 'ONT_ATP_PARAMETRO_SALDO_DEC_PB'
   AND    Trunc(SYSDATE) BETWEEN Trunc(Nvl(start_date_active, SYSDATE))
                             AND Trunc(Nvl(end_date_active, SYSDATE))
@@ -3300,7 +3300,7 @@ BEGIN
   --
 EXCEPTION
   WHEN OTHERS THEN
-    raise_application_error(-20000, 'Erro ao selecionar a quantidade de Dias de Segurançao para Produção - '||SQLERRM);
+    raise_application_error(-20000, 'Erro ao selecionar a quantidade de Dias de Seguranï¿½ao para Produï¿½ï¿½o - '||SQLERRM);
 END fnd_dias_seguranca_prod_dec;
 --
 --**************************************************************************
@@ -3345,7 +3345,7 @@ BEGIN
     --
     FOR i IN 1..w_qtd_periodos_mes LOOP
       --
-      IF To_Number(To_Char(SYSDATE,'DD')) <= To_Number(omp12001jb.fnd_horizonte_periodo_dec(i,'ATE')) THEN -- dia de hoje está no decêndio "i"
+      IF To_Number(To_Char(SYSDATE,'DD')) <= To_Number(omp12001jb.fnd_horizonte_periodo_dec(i,'ATE')) THEN -- dia de hoje estï¿½ no decï¿½ndio "i"
         --
 --        --dbms_output.put_line('To_Number(To_Char(SYSDATE,DD)): '||To_Number(To_Char(SYSDATE,'DD')));
 --        --dbms_output.put_line('To_Number(omp12001jb_testeby7.fnd_horizonte_periodo_dec(i,ATE)): '||To_Number(omp12001jb_testeby7.fnd_horizonte_periodo_dec(i,'ATE')));
@@ -3362,7 +3362,7 @@ BEGIN
       --
     END LOOP;
     --
-    IF p_carteira = 'S' THEN -- Se for Carteira, começa um decêndio a mais do que Produção
+    IF p_carteira = 'S' THEN -- Se for Carteira, comeï¿½a um decï¿½ndio a mais do que Produï¿½ï¿½o
       --
       IF To_Number(To_Char(w_ini_dec,'DD')) >= 21 THEN --$$$$$$$$$$$omp12001jb_testeby7.fnd_horizonte_periodo_dec(w_qtd_periodos_mes,'DE') THEN
         --
@@ -3471,11 +3471,11 @@ BEGIN
   --
 EXCEPTION
   WHEN OTHERS THEN
-    Raise_Application_Error(-20000, 'Erro ao selecionar o período - '||SQLERRM);
+    Raise_Application_Error(-20000, 'Erro ao selecionar o perï¿½odo - '||SQLERRM);
 END fnd_periodo_dec;
 
 
---Função criada para redefinição de descritivo de periodos do decêndio
+--Funï¿½ï¿½o criada para redefiniï¿½ï¿½o de descritivo de periodos do decï¿½ndio
 --Guilherme Rodrigues - 06/04/2021 
 FUNCTION fnd_ajusta_periodos RETURN NUMBER IS
   --
@@ -3543,7 +3543,7 @@ BEGIN
 
 
             UPDATE FND_LOOKUP_VALUES 
-            SET DESCRIPTION = to_char(dtIni,'DD-mon-YYYY') || ' até ' || to_char(dtFim, 'DD-mon-YYYY'), 
+            SET DESCRIPTION = to_char(dtIni,'DD-mon-YYYY') || ' atï¿½ ' || to_char(dtFim, 'DD-mon-YYYY'), 
             LAST_UPDATE_DATE = SYSDATE
             WHERE 1=1 --language = userenv('LANG')
             AND enabled_flag        = 'Y'
@@ -3565,7 +3565,7 @@ BEGIN
   --
 EXCEPTION
   WHEN OTHERS THEN
-    raise_application_error(-20000, 'Erro ao selecionar os periodos validos decêndios - '||SQLERRM);
+    raise_application_error(-20000, 'Erro ao selecionar os periodos validos decï¿½ndios - '||SQLERRM);
     RETURN(99);
 END fnd_ajusta_periodos;
 
@@ -3631,7 +3631,7 @@ BEGIN
        AND view_application_id = 660
        AND lookup_type         = 'ONT_ATP_PRODUTOS_CALCULA_DMF'
        AND description         = p_segment1
-       AND tag                 IN ('1','2','7') -->Engenharia, Revenda, Exportação
+       AND tag                 IN ('1','2','7') -->Engenharia, Revenda, Exportaï¿½ï¿½o
        AND Trunc(SYSDATE) BETWEEN Trunc(Nvl(start_date_active, SYSDATE))
                               AND Trunc(Nvl(end_date_active, SYSDATE))
     ;
@@ -3646,7 +3646,7 @@ BEGIN
   --
 END;
 */
---Função de retorno de quantidade de carteira do item/periodo/CD Interno
+--Funï¿½ï¿½o de retorno de quantidade de carteira do item/periodo/CD Interno
 FUNCTION fnd_carteira_interna(p_item    NUMBER
                       ,p_um      VARCHAR2
                       ,p_periodo NUMBER
@@ -4391,7 +4391,7 @@ BEGIN
          and org_code = v_short_code;
       --
     END;
-    -- FINAL PP PRODUÇÃO
+    -- FINAL PP PRODUï¿½ï¿½O
   END IF;
   fnd_file.put_line(fnd_file.log,'Time: '||to_char(sysdate,'DD/MM/YYYY HH24:MI:SS'));
   --
@@ -4858,7 +4858,7 @@ BEGIN
       COMMIT;
       --
     END;
-    -- FINAL PP PRODUÇÃO
+    -- FINAL PP PRODUï¿½ï¿½O
   END IF;
   fnd_file.put_line(fnd_file.log,'Time: '||to_char(sysdate,'DD/MM/YYYY HH24:MI:SS'));
   --
@@ -4884,7 +4884,7 @@ p_gera_log_geral NUMBER;
 
 
 
---Seleciona os produtos que possui programa de produção ou compra
+--Seleciona os produtos que possui programa de produï¿½ï¿½o ou compra
 CURSOR c_produto IS
 SELECT INVENTORY_ITEM_ID, SEGMENT1, ITEM_UM, max(COMPRAS) AS COMPRAS FROM (
   SELECT DISTINCT ppp.inventory_item_id
@@ -5259,7 +5259,7 @@ SELECT NVL(sum(moqd.primary_transaction_quantity),0)
           AND MS.inventory_item_id = p_inventory_item_id
 order by moqd.lot_number;
 
---Seleciona a quantidade em estoque Fábrica
+--Seleciona a quantidade em estoque Fï¿½brica
 CURSOR c_fabrica(p_inventory_item_id IN NUMBER
                  ,p_item_um           IN VARCHAR2
                  ,p_id_periodo        IN VARCHAR2
@@ -5286,7 +5286,7 @@ order by moqd.lot_number;
 
 
 --
--- Seleciona os CDs não Internos/Fábrica
+-- Seleciona os CDs nï¿½o Internos/Fï¿½brica
 CURSOR c_cd
 is 
  select MEANING, LOOKUP_CODE, TAG
@@ -5406,7 +5406,7 @@ IS
   cont                          NUMBER :=0;
   --
   --
-  -- 10/03/2021 - Rodrigues - Novas Variáveis (amigáveis)
+  -- 10/03/2021 - Rodrigues - Novas Variï¿½veis (amigï¿½veis)
   qt_producao         NUMBER;
   qt_producao_perc    NUMBER;
   qt_carteira         NUMBER;
@@ -5474,7 +5474,7 @@ BEGIN
   --
   DBMS_OUTPUT.enable(1000000000000000);
   --
-  --dbms_output.put_line('Início..');
+  --dbms_output.put_line('Inï¿½cio..');
   --
   fnd_profile.get ('USER_ID', w_id_usuario);
   --
@@ -5529,7 +5529,7 @@ BEGIN
 
   EXCEPTION
     WHEN OTHERS THEN
-      w_ds_erro:= 'Erro ao gerar histórico na tabela OM_SALDO_PRODUTO_ATP_HIS_JB. Erro:'||SQLERRM;
+      w_ds_erro:= 'Erro ao gerar histï¿½rico na tabela OM_SALDO_PRODUTO_ATP_HIS_JB. Erro:'||SQLERRM;
       RAISE w_erro;
   END;
   --
@@ -5941,15 +5941,15 @@ BEGIN
   --
   --Seleciona os produtos que possuam plano de producao
 
-  --Seleciona opção de inclusão de saldo transitorio
+  --Seleciona opï¿½ï¿½o de inclusï¿½o de saldo transitorio
   considera_transitorio := omp12001jb.fnd_considera_transitorio;
 
-  --Redefinição de descritivo de periodos\decêncios
+  --Redefiniï¿½ï¿½o de descritivo de periodos\decï¿½ncios
   retAj := fnd_ajusta_periodos();
   --
 
     dbms_output.put_line('======================================================================');
-    dbms_output.put_line('Composição de dados FAT_DRP..');
+    dbms_output.put_line('Composiï¿½ï¿½o de dados FAT_DRP..');
 
 
     DELETE APPS.TEMP_DRP_RESSUPRIMENTO;
@@ -5959,7 +5959,7 @@ BEGIN
     COMMIT; 
     INSERT INTO APPS.TEMP_DRP_ESTOQUE_TRANSITO (UND_MEDIDA, COD_ITEM, VOL_META, DES_CD, DAT_PREVISAO_CHEGADA) SELECT UND_MEDIDA, COD_ITEM, VOL_META, DES_CD, DAT_PREVISAO_CHEGADA FROM FAT_DRP_ESTOQUE_TRANSITO;
 
-    dbms_output.put_line('Fim da composição de dados FAT_DRP..');
+    dbms_output.put_line('Fim da composiï¿½ï¿½o de dados FAT_DRP..');
     dbms_output.put_line('======================================================================');
 
   begin
@@ -6102,9 +6102,9 @@ BEGIN
 
       --
       qt_producao := 0;
-      --  Busca dados de produção dentro do periodo
+      --  Busca dados de produï¿½ï¿½o dentro do periodo
           if log_passo_a_passo = 1 THEN 
-            dbms_output.put_line('Busca dados de produção');
+            dbms_output.put_line('Busca dados de produï¿½ï¿½o');
         end if;
       OPEN c_producao (r_produto.inventory_item_id,
                        r_produto.item_um,
@@ -6118,7 +6118,7 @@ BEGIN
       dados_log := dados_log || 'Producao: '||nvl(qt_producao,0)|| ' | ';
 
       qt_compras_eet := 0;
-      --  Busca dados de produção dentro do periodo
+      --  Busca dados de produï¿½ï¿½o dentro do periodo
           if log_passo_a_passo = 1 THEN 
             dbms_output.put_line('Busca dados de Compras Internas');
         end if;
@@ -6135,7 +6135,7 @@ BEGIN
 
       qt_compras_eet_portokoll := 0;
 
-      --VALIDAÇÕES E COMPOSIÇÕES QUE OCORREM SOMENTE NO PRIMEIRO PERIODO
+      --VALIDAï¿½ï¿½ES E COMPOSIï¿½ï¿½ES QUE OCORREM SOMENTE NO PRIMEIRO PERIODO
       if nvl(r_periodo,0) = 1 then
         if nvl(considera_transitorio,0) = 1 then
               --  Busca dados de estoque Fabrica
@@ -6170,7 +6170,7 @@ BEGIN
 
         it_compra_int_portokoll := 0;
             if log_passo_a_passo = 1 THEN 
-                dbms_output.put_line('Verifica se é compra interna Portokoll');
+                dbms_output.put_line('Verifica se ï¿½ compra interna Portokoll');
             end if;
         OPEN c_tem_portokoll(r_produto.inventory_item_id,
                              r_produto.item_um,
@@ -6192,7 +6192,7 @@ BEGIN
          qt_cd_portokoll := 'EET';
 
          dados_log := dados_log || 'Compra Portokoll: Sim' || ' | ';
-            --  Busca dados de produção dentro do periodo - Somente Portokoll
+            --  Busca dados de produï¿½ï¿½o dentro do periodo - Somente Portokoll
                 if log_passo_a_passo = 1 THEN 
                     dbms_output.put_line('Busca dados de Compra interna Portokoll');
                 end if;
@@ -6298,10 +6298,10 @@ BEGIN
 
       else
               if log_passo_a_passo = 1 THEN 
-                dbms_output.put_line('Não é Compra interna Portokoll');
+                dbms_output.put_line('Nï¿½o ï¿½ Compra interna Portokoll');
             end if;
 
-         dados_log := dados_log || 'Compra Portokoll: Não' || ' | ';
+         dados_log := dados_log || 'Compra Portokoll: Nï¿½o' || ' | ';
           --qt_producao_perc := ((nvl(qt_producao,0) + nvl(qt_compras_eet,0)) * (w_pr_disponivel_saldo / 100));
           qt_producao_perc := ((nvl(qt_producao,0)  * (w_pr_disponivel_saldo / 100)) + nvl(qt_compras_eet,0));
 
@@ -6441,7 +6441,7 @@ BEGIN
             end if;
 
             dados_log_cd := 'CD : EET' || ' | ';
-            dados_log_cd := dados_log_cd || 'Produção - Potes Demais: ' || nvl(qt_saldo_pb,0) || ' | ';
+            dados_log_cd := dados_log_cd || 'Produï¿½ï¿½o - Potes Demais: ' || nvl(qt_saldo_pb,0) || ' | ';
             dados_log_cd := dados_log_cd || 'Carteira Geral: ' || nvl(cd_carteira_geral,0) || ' | ';
             dados_log_cd := dados_log_cd || 'Demanda Geral: ' || nvl(cd_demanda_geral,0) || ' | ';
             dados_log_cd := dados_log_cd || 'Carteira CD: ' || nvl(cd_pedidos,0) || ' | ';
@@ -6450,7 +6450,7 @@ BEGIN
             dados_log_cd := dados_log_cd || 'Saldo PRD vs CART: ' || nvl(cd_prod_carteira,0) || ' | ';
             dados_log_cd := dados_log_cd || 'Negativo do CD: ' || nvl(cd_negativo,0) || ' | ';
             dados_log_cd := dados_log_cd || 'Saldo CD: ' || nvl(cd_saldo,0) || ' | ';
-            dados_log_cd := dados_log_cd || 'Projeção CD: ' || nvl(cd_projecao,0);
+            dados_log_cd := dados_log_cd || 'Projeï¿½ï¿½o CD: ' || nvl(cd_projecao,0);
             dados_log_cd := dados_log_cd || 'Negativo - Periodo Anterior: ' || nvl(cd_carteira_negativa,0);
             if log_geral = 1 or log_passo_a_passo = 1 THEN
               dbms_output.put_line(dados_log_cd);
@@ -6515,7 +6515,7 @@ BEGIN
 
 
                   dados_log_cd := 'CD : ' || cd_cd || ' | ';
-                  dados_log_cd := dados_log_cd || 'Produção - Potes Demais: ' || nvl(qt_saldo_pb,0) || ' | ';
+                  dados_log_cd := dados_log_cd || 'Produï¿½ï¿½o - Potes Demais: ' || nvl(qt_saldo_pb,0) || ' | ';
                   dados_log_cd := dados_log_cd || 'Carteira Geral: ' || nvl(cd_carteira_geral,0) || ' | ';
                   dados_log_cd := dados_log_cd || 'Demanda Geral: ' || nvl(cd_demanda_geral,0) || ' | ';
                   dados_log_cd := dados_log_cd || 'Carteira CD: ' || nvl(cd_pedidos,0) || ' | ';
@@ -6524,7 +6524,7 @@ BEGIN
                   dados_log_cd := dados_log_cd || 'Saldo PRD vs CART: ' || nvl(cd_prod_carteira,0) || ' | ';
                   dados_log_cd := dados_log_cd || 'Negativo do CD: ' || nvl(cd_negativo,0) || ' | ';
                   dados_log_cd := dados_log_cd || 'Saldo CD: ' || nvl(cd_saldo,0) || ' | ';
-                  dados_log_cd := dados_log_cd || 'Projeção CD: ' || nvl(cd_projecao,0);
+                  dados_log_cd := dados_log_cd || 'Projeï¿½ï¿½o CD: ' || nvl(cd_projecao,0);
                   if log_geral = 1 or log_passo_a_passo = 1 THEN
                      dbms_output.put_line(dados_log_cd);
                   end if;
@@ -6547,8 +6547,8 @@ BEGIN
 
       EXCEPTION
         WHEN OTHERS THEN
-          IF ( send_email( 'Erro ao gravar o saldo de produto na tabela OM_SALDO_PRODUTO_ATP_JB_CD_V2 (Produção). Erro: '||SQLERRM || ' | Codigo: '||SQLCODE || ' - Log: ' || dados_log || ' - Log CD:' || dados_log_cd) <> 'OK' ) THEN
-             dbms_output.put_line('  ERRO: Não foi possível enviar o e-mail.');
+          IF ( send_email( 'Erro ao gravar o saldo de produto na tabela OM_SALDO_PRODUTO_ATP_JB_CD_V2 (Produï¿½ï¿½o). Erro: '||SQLERRM || ' | Codigo: '||SQLCODE || ' - Log: ' || dados_log || ' - Log CD:' || dados_log_cd) <> 'OK' ) THEN
+             dbms_output.put_line('  ERRO: Nï¿½o foi possï¿½vel enviar o e-mail.');
           END IF;
 
           w_ds_erro:= 'Erro ao gravar o saldo de produtos. Erro:'||SQLERRM;
@@ -6688,7 +6688,7 @@ BEGIN
       EXCEPTION
         WHEN OTHERS THEN
           IF ( send_email( 'Erro ao gravar o saldo de produto na tabela OM_SALDO_PRODUTO_ATP_JB_CD_V2 (Compras). Erro: '||SQLERRM || ' | Codigo: '||SQLCODE || ' - Log: ' || dados_log || ' - Log CD:' || dados_log_cd) <> 'OK' ) THEN
-             dbms_output.put_line('  ERRO: Não foi possível enviar o e-mail.');
+             dbms_output.put_line('  ERRO: Nï¿½o foi possï¿½vel enviar o e-mail.');
           END IF;
 
           w_ds_erro:= 'Erro ao gravar o saldo de compra de produtos. Erro:'||SQLERRM;
@@ -6762,7 +6762,7 @@ BEGIN
       EXCEPTION
         WHEN OTHERS THEN
           IF ( send_email( 'Erro ao gravar o saldo de produto na tabela OM_SALDO_PRODUTO_ATP_JB. Erro: '||SQLERRM || ' | Codigo: '||SQLCODE || ' - Log: ' || dados_log || ' - Log CD:' || dados_log_cd) <> 'OK' ) THEN
-             dbms_output.put_line('  ERRO: Não foi possível enviar o e-mail.');
+             dbms_output.put_line('  ERRO: Nï¿½o foi possï¿½vel enviar o e-mail.');
           END IF;
           w_ds_erro:= 'Erro ao gravar o saldo de produto na tabela OM_SALDO_PRODUTO_ATP_JB. Erro:'||SQLERRM;
           RAISE w_erro;
@@ -6835,7 +6835,7 @@ valida_cd NUMBER;
 w_ds_email VARCHAR2(4000);
 v_code number;
 
---Seleciona os produtos que possui programa de produção ou compra
+--Seleciona os produtos que possui programa de produï¿½ï¿½o ou compra
 CURSOR c_produto IS
 SELECT INVENTORY_ITEM_ID, SEGMENT1, ITEM_UM, max(COMPRAS) AS COMPRAS FROM (
   SELECT DISTINCT ppp.inventory_item_id
@@ -6990,7 +6990,7 @@ BEGIN
 
   DBMS_OUTPUT.enable(1000000000000000);
   --
-  --dbms_output.put_line('Início..');
+  --dbms_output.put_line('Inï¿½cio..');
   --
   fnd_profile.get ('USER_ID', w_id_usuario);
   --
@@ -7030,7 +7030,7 @@ BEGIN
 
   EXCEPTION
     WHEN OTHERS THEN
-      w_ds_erro:= 'Erro ao gerar histórico na tabela OM_SALDO_PRODUTO_ATP_HIS_POINTER. Erro:'||SQLERRM;
+      w_ds_erro:= 'Erro ao gerar histï¿½rico na tabela OM_SALDO_PRODUTO_ATP_HIS_POINTER. Erro:'||SQLERRM;
       RAISE w_erro;
   END;
   
@@ -7053,7 +7053,7 @@ BEGIN
 	  AND NVL(TAG,0) = 0;
 					  
 	if valida_cd > 1 then 
-	  w_ds_erro:= 'Erro Parâmetro inválidos em PB_PARAM_ATP_POINTER';
+	  w_ds_erro:= 'Erro Parï¿½metro invï¿½lidos em PB_PARAM_ATP_POINTER';
       RAISE w_erro;
 	end if;
   
@@ -7063,7 +7063,7 @@ BEGIN
 	
 		FOR r_periodo IN 1..omp12001jb.fnd_qtd_periodo_dec LOOP
 			
-			--  Busca dados de produção dentro do periodo
+			--  Busca dados de produï¿½ï¿½o dentro do periodo
 			qtd_producao := 0;
 			total_consumido := 0;
 
@@ -7226,7 +7226,7 @@ END prc_carga_saldo_pointer;
                     , 'DEV', 'Ambiente de desenvolvimento - DEV'
                     , 'QAS', 'Ambiente de desenvolvimento - QAS'
                     , 'TST', 'Ambiente de desenvolvimento - TST'
-                    , 'PRD', 'Ambiente de Produção')                instance_descricao
+                    , 'PRD', 'Ambiente de Produï¿½ï¿½o')                instance_descricao
         INTO v_ambiente, v_descricao
       FROM V$INSTANCE;
     EXCEPTION
@@ -7239,8 +7239,8 @@ END prc_carga_saldo_pointer;
                                                 , 'guilherme.rodrigues@portobello.com.br'                               -- Recipient
                                                 , ''                                         -- CcRecipient
                                                 , ''                                                     -- BccRecipient
-                                                , v_ambiente || ' - ERRO na Geração de Dados - OMP12001JB'  -- Subject
-                                                , ' - ERRO na Geração de dados de Saldo Projetado' || Chr(10)
+                                                , v_ambiente || ' - ERRO na Geraï¿½ï¿½o de Dados - OMP12001JB'  -- Subject
+                                                , ' - ERRO na Geraï¿½ï¿½o de dados de Saldo Projetado' || Chr(10)
                                                     || v_descricao || Chr(10) || Chr(10)
                                                     || 'Dados do erro:' || Chr(10)
                                                     || p_dados_erro || Chr(10)
