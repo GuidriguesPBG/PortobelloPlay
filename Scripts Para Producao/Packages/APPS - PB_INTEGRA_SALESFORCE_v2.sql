@@ -29,7 +29,7 @@ IS
                                   p_completa   IN     NUMBER);
 
 
-   PROCEDURE  (errbuf          OUT VARCHAR2,
+   PROCEDURE  p_gera_dados_estoque_zero (errbuf          OUT VARCHAR2,
                                         errcode         OUT VARCHAR2,
                                         p_completa   IN     NUMBER);
 
@@ -2098,10 +2098,36 @@ order by l.attribute11
 
 
    BEGIN
-      DELETE TMP_PROJETADO_SALESFORCE;
+      
+      -- Passo 1 - Exclui os registros de saldo projetado (SALDO_ZERO = 0)
+      DELETE TMP_PROJETADO_SALESFORCE X 
+      WHERE SALDO_ZERO = 0;
+      COMMIT;
+
+      -- Passo 2 - Exclui todos dados de estoque projetado real (SALDO_ZERO = 1) e que não possuiam saldo projetado
+      DELETE TMP_PROJETADO_SALESFORCE X 
+      WHERE SALDO_ZERO = 1
+      AND EXISTS (
+          SELECT ATP.COD_ITEM, ATP.DES_CD FROM OM_SALDO_PRODUTO_ATP_JB_cd_V2 ATP
+          WHERE COD_ITEM = X.COD_ITEM AND DES_CD = X.DES_CD
+          UNION 
+          SELECT B.SEGMENT1 COD_ITEM, DEP.DESCR DES_CD FROM OM_SALDO_PRODUTO_ATP_POINTER ATP
+          INNER JOIN MTL_SYSTEM_ITEMS_B B ON ATP.INVENTORY_ITEM_ID = B.INVENTORY_ITEM_ID AND B.ORGANIZATION_ID = PB_MASTER_ORGANIZATION_ID 
+          INNER JOIN (SELECT LOOKUP_CODE ID, MEANING DESCR
+                                             FROM FND_LOOKUP_VALUES
+                                            WHERE     language =
+                                                         USERENV ('LANG')
+                                                  AND enabled_flag = 'Y'
+                                                  AND lookup_type =
+                                                         'ONT_DEPOSITOS_SALES_PB') DEP ON ATP.ID_DEPOSITO = DEP.ID 
+          WHERE B.SEGMENT1 = X.COD_ITEM AND DEP.DESCR = X.DES_CD
+      );
 
       COMMIT;
 
+
+
+      /* Formatted on 12/04/2022 16:10:52 (QP5 v5.215.12089.38647) */
       INSERT INTO TMP_PROJETADO_SALESFORCE (DES_CD,
                                             COD_ITEM,
                                             LAST_UPDATE_DATE,
@@ -2127,93 +2153,166 @@ order by l.attribute11
                                             PTBL_P7,
                                             PTBL_P8,
                                             PTBL_P9,
-                                            PTBL_P10)
-         SELECT PS.*, PB.*
-           FROM    (SELECT *
-                      FROM (  SELECT ID_PERIODO AS ID_PERIODO,
-                                     DES_CD,
-                                     COD_ITEM,
-                                     CASE
-                                        WHEN SUM (SALDO_TOTAL) < 0 THEN 0
-                                        ELSE SUM (SALDO_TOTAL)
-                                     END
-                                        AS SALDO_TOTAL,
-                                     --MAX (LAST_UPDATE_DATE) AS LAST_UPDATE_DATE
-                     MAX (TO_DATE(TRUNC(LAST_UPDATE_DATE) || ' 23:59:59','DD/MM/YYYY HH24:MI:SS')) AS LAST_UPDATE_DATE
-                                FROM apps.OM_SALDO_PRODUTO_ATP_JB_cd_V2
-                               WHERE DES_CD IN
-                                        (SELECT MEANING
-                                           FROM FND_LOOKUP_VALUES
-                                          WHERE     language = USERENV ('LANG')
-                                                AND enabled_flag = 'Y'
-                                                AND lookup_type =
-                                                       'ONT_DEPOSITOS_SALES_PB')
-                            GROUP BY ID_PERIODO, DES_CD, COD_ITEM) A PIVOT (SUM (
-                                                                               SALDO_TOTAL) SALDO_TOTAL
-                                                                     FOR ID_PERIODO
-                                                                     IN  (1,
-                                                                         2,
-                                                                         3,
-                                                                         4,
-                                                                         5,
-                                                                         6,
-                                                                         7,
-                                                                         8,
-                                                                         9,
-                                                                         10))) PS
-                LEFT JOIN
-                   (SELECT *
+                                            PTBL_P10,
+                                            BALANCE__C,
+                                            BALANCEPORTOBELLOSHOP__C,
+                                            EXPORTBALANCE__C,
+                                            SALDO_ZERO)
+        SELECT PS.*,
+                PB.*,
+                NVL (SD.SD_PB, 0) SD_PB,
+                NVL (SD_SHOP, 0) SD_SHOP,
+                NVL (SD_EXP, 0) SD_EXPO,
+                0
+          FROM (SELECT *
+                  FROM (  SELECT ID_PERIODO AS ID_PERIODO,
+                                  DES_CD,
+                                  COD_ITEM,
+                                  CASE
+                                    WHEN SUM (SALDO_TOTAL) < 0 THEN 0
+                                    ELSE SUM (SALDO_TOTAL)
+                                  END
+                                    AS SALDO_TOTAL,
+                                  --MAX (LAST_UPDATE_DATE) AS LAST_UPDATE_DATE
+                                  MAX (
+                                    TO_DATE (
+                                        TRUNC (LAST_UPDATE_DATE) || ' 23:59:59',
+                                        'DD/MM/YYYY HH24:MI:SS'))
+                                    AS LAST_UPDATE_DATE
+                            FROM apps.OM_SALDO_PRODUTO_ATP_JB_CD_V2
+                            WHERE DES_CD IN
+                                    (SELECT MEANING
+                                        FROM FND_LOOKUP_VALUES
+                                      WHERE     language = USERENV ('LANG')
+                                            AND enabled_flag = 'Y'
+                                            AND lookup_type =
+                                                    'ONT_DEPOSITOS_SALES_PB')
+                        GROUP BY ID_PERIODO, DES_CD, COD_ITEM) A PIVOT (SUM (
+                                                                            SALDO_TOTAL) SALDO_TOTAL
+                                                                  FOR ID_PERIODO
+                                                                  IN  (1,
+                                                                      2,
+                                                                      3,
+                                                                      4,
+                                                                      5,
+                                                                      6,
+                                                                      7,
+                                                                      8,
+                                                                      9,
+                                                                      10))) PS
+                LEFT JOIN (SELECT *
+                            FROM (  SELECT A.ID_PERIODO,
+                                            'EET' AS DES_CD,
+                                            msi.segment1 AS COD_ITEM,
+                                            CASE
+                                              WHEN SUM (QT_SALDO) < 0 THEN 0
+                                              ELSE SUM (QT_SALDO)
+                                            END
+                                              AS QT_SALDO,
+                                            MAX (
+                                              TO_DATE (
+                                                    TRUNC (A.LAST_UPDATE_DATE)
+                                                  || ' 23:59:59',
+                                                  'DD/MM/YYYY HH24:MI:SS'))
+                                              AS LAST_UPDATE_DATE
+                                      FROM    apps.OM_SALDO_PRODUTO_ATP_JB a
+                                            INNER JOIN
+                                              mtl_system_items_b msi
+                                            ON a.inventory_item_id =
+                                                  msi.inventory_item_id
+                                      WHERE msi.organization_id =
+                                              pb_master_organization_id
+                                  GROUP BY A.ID_PERIODO, MSI.SEGMENT1) A PIVOT (SUM (
+                                                                                    QT_SALDO) QT_SALDO
+                                                                          FOR ID_PERIODO
+                                                                          IN  (1,
+                                                                              2,
+                                                                              3,
+                                                                              4,
+                                                                              5,
+                                                                              6,
+                                                                              7,
+                                                                              8,
+                                                                              9,
+                                                                              10))) PB
+                  ON PS.COD_ITEM = PB.COD_ITEM AND PS.DES_CD = PB.DES_CD
+                LEFT JOIN (  SELECT COD_DEPOSITO,
+                                    COD_PRODUTO_ORA,
+                                    SUM (SALDO_DISPONIVEL) SD_PB,
+                                    SUM (SALDO_PBSHOP) SD_SHOP,
+                                    SUM (SALDO_EXPORTACAO) AS SD_EXP
+                              FROM XXPB_ESTOQUE_API
+                          GROUP BY COD_DEPOSITO, COD_PRODUTO_ORA) SD
+                  ON     PB.DES_CD = SD.COD_DEPOSITO
+                      AND PB.COD_ITEM = SD.COD_PRODUTO_ORA
+        UNION
+        SELECT A.*,
+                NVL (SD.SD_PB, 0) SD_PB,
+                NVL (SD_SHOP, 0) SD_SHOP,
+                NVL (SD_EXP, 0) SD_EXPO,
+                0
+          FROM    (SELECT *
                       FROM (  SELECT A.ID_PERIODO,
-                                     'EET' AS DES_CD,
-                                     msi.segment1 AS COD_ITEM,
-                                     CASE
-                                        WHEN SUM (QT_SALDO) < 0 THEN 0
-                                        ELSE SUM (QT_SALDO)
-                                     END
-                                        AS QT_SALDO,
-                                     MAX (TO_DATE(TRUNC(A.LAST_UPDATE_DATE) || ' 23:59:59','DD/MM/YYYY HH24:MI:SS')) AS LAST_UPDATE_DATE
-                                FROM apps.OM_SALDO_PRODUTO_ATP_JB a
-                                     INNER JOIN mtl_system_items_b msi
-                                        ON a.inventory_item_id =
-                                              msi.inventory_item_id
-                              WHERE msi.organization_id =
-                                        pb_master_organization_id
-                              GROUP BY A.ID_PERIODO, MSI.SEGMENT1
-                            UNION ALL 
-                              SELECT A.ID_PERIODO,
                                     DEP.DESCR AS DES_CD,
                                     msi.segment1 AS COD_ITEM,
-                                    CASE WHEN SUM (QT_SALDO) < 0 THEN 0 ELSE SUM (QT_SALDO) END
+                                    CASE
+                                        WHEN SUM (QT_SALDO) < 0 THEN 0
+                                        ELSE SUM (QT_SALDO)
+                                    END
                                         AS QT_SALDO,
                                     MAX (
-                                        TO_DATE (TRUNC (A.LAST_UPDATE_DATE) || ' 23:59:59',
-                                                'DD/MM/YYYY HH24:MI:SS'))
-                                        AS LAST_UPDATE_DATE
+                                        TO_DATE (
+                                          TRUNC (A.LAST_UPDATE_DATE) || ' 23:59:59',
+                                          'DD/MM/YYYY HH24:MI:SS'))
+                                        AS LAST_UPDATE_DATE,
+                                    0 P1,
+                                    0 P2,
+                                    0 P3,
+                                    0 P4,
+                                    0 P5,
+                                    0 P6,
+                                    0 P7,
+                                    0 P8,
+                                    0 P9,
+                                    0 P10,
+                                    DEP.DESCR AS DES_CD_1,
+                                    msi.segment1 AS COD_ITEM_1,
+                                    NULL AS DATA
                                 FROM apps.OM_SALDO_PRODUTO_ATP_POINTER a
                                     INNER JOIN mtl_system_items_b msi
-                                        ON a.inventory_item_id = msi.inventory_item_id
+                                        ON a.inventory_item_id =
+                                              msi.inventory_item_id
                                     INNER JOIN (SELECT LOOKUP_CODE ID, MEANING DESCR
                                                   FROM FND_LOOKUP_VALUES
-                                                  WHERE     language = USERENV ('LANG')
+                                                  WHERE     language =
+                                                              USERENV ('LANG')
                                                         AND enabled_flag = 'Y'
-                                                        AND lookup_type = 'ONT_DEPOSITOS_SALES_PB') DEP
+                                                        AND lookup_type =
+                                                              'ONT_DEPOSITOS_SALES_PB') DEP
                                         ON DEP.ID = A.ID_DEPOSITO
                               WHERE msi.organization_id = pb_master_organization_id
-                              GROUP BY A.ID_PERIODO, MSI.SEGMENT1, DEP.DESCR                                                        
-                            ) A PIVOT (SUM (
-                                                                             QT_SALDO) QT_SALDO
-                                                                   FOR ID_PERIODO
-                                                                   IN  (1,
-                                                                       2,
-                                                                       3,
-                                                                       4,
-                                                                       5,
-                                                                       6,
-                                                                       7,
-                                                                       8,
-                                                                       9,
-                                                                       10))) PB
-                ON PS.COD_ITEM = PB.COD_ITEM AND PS.DES_CD = PB.DES_CD;
+                            GROUP BY A.ID_PERIODO, MSI.SEGMENT1, DEP.DESCR) A PIVOT (SUM (
+                                                                                        QT_SALDO) QT_SALDO
+                                                                              FOR ID_PERIODO
+                                                                              IN  (1,
+                                                                                  2,
+                                                                                  3,
+                                                                                  4,
+                                                                                  5,
+                                                                                  6,
+                                                                                  7,
+                                                                                  8,
+                                                                                  9,
+                                                                                  10))) A
+                LEFT JOIN
+                  (  SELECT COD_DEPOSITO,
+                            COD_PRODUTO_ORA,
+                            SUM (SALDO_DISPONIVEL) SD_PB,
+                            SUM (SALDO_PBSHOP) SD_SHOP,
+                            SUM (SALDO_EXPORTACAO) AS SD_EXP
+                        FROM XXPB_ESTOQUE_API
+                    GROUP BY COD_DEPOSITO, COD_PRODUTO_ORA) SD
+                ON A.DES_CD = SD.COD_DEPOSITO AND A.COD_ITEM = SD.COD_PRODUTO_ORA;
 
       COMMIT;
 
@@ -2228,7 +2327,7 @@ order by l.attribute11
          LOOP
             INSERT INTO tmp_projetado_salesforce
                SELECT X.COD_DEPOSITO AS DES_CD,
-                      A.COD_PRODUTO_ORA AS COD_ITEM,
+                      A.SEGMENT1 AS COD_ITEM,
                       SYSDATE,
                       0,
                       0,
@@ -2252,12 +2351,20 @@ order by l.attribute11
                       0,
                       0,
                       0,
-                      0
-                 FROM tmp_prod_salesforce a
-                WHERE NOT EXISTS
+                      0,
+                      0,
+                      0,
+                      0,
+                      1
+                 --FROM tmp_prod_salesforce a
+                 from mtl_system_items_b A
+                 where A.attribute9 in('AT','IN','SC','SP','SU','OP','SS')
+                 and A.organization_id = pb_master_organization_id
+                 and length(a.segment1) < 20
+                 and NOT EXISTS
                              (SELECT 1
                                 FROM tmp_projetado_salesforce
-                               WHERE     cod_item = a.cod_produto_ora
+                               WHERE     cod_item = a.SEGMENT1
                                      AND DES_CD = X.COD_DEPOSITO);
 
             COMMIT;
@@ -2337,6 +2444,7 @@ order by l.attribute11
 
          COMMIT;
 
+/*
          FOR X IN C_DEPOSITO
          LOOP
             FOR y
@@ -2392,6 +2500,7 @@ order by l.attribute11
                COMMIT;
             END LOOP;
          END LOOP;
+         */
       END IF;
 
       IF P_FULL = 0

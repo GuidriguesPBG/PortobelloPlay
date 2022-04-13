@@ -207,7 +207,8 @@ ORDER BY a.cod_produto_ora, a.COD_DEPOSITO, a.COD_TONALIDADE_CALIBRE;
   BEGIN
     if nvl(l_tipo_retorno,0) = 10 then
       SELECT COUNT(*) into l_total_regs
-        FROM TMP_PROJETADO_SALESFORCE STK;    
+        FROM TMP_PROJETADO_SALESFORCE STK
+        where (last_update_date >= to_date(p_last_date,'YYYY-MM-DD HH24:MI:SS') or p_last_date is null);    
     end if;
     
     if nvl(l_tipo_retorno,0) = 11 then
@@ -217,6 +218,7 @@ ORDER BY a.cod_produto_ora, a.COD_DEPOSITO, a.COD_TONALIDADE_CALIBRE;
                   INNER JOIN (SELECT MEANING COD, LOOKUP_CODE ID FROM FND_LOOKUP_VALUES WHERE     language = USERENV ('LANG') AND enabled_flag = 'Y' AND lookup_type = 'ONT_DEPOSITOS_SALES_PB') DEP ON STK.COD_DEPOSITO = DEP.COD
                  WHERE
                     SALDO_PBSHOP> 0 OR SALDO_DISPONIVEL > 0 OR SALDO_EXPORTACAO > 0   
+/*
 				UNION ALL 
 				SELECT LAST_UPDATE_DATE
 				 FROM APPS.XXPB_ESTOQUE_API_ZERO STK
@@ -230,6 +232,7 @@ ORDER BY a.cod_produto_ora, a.COD_DEPOSITO, a.COD_TONALIDADE_CALIBRE;
                                              STK.COD_PRODUTO_ORA
                                       AND COD_DEPOSITO = STK.COD_DEPOSITO
                                       AND SALDO_DISPONIVEL > 0))
+*/
 				)
 		WHERE last_update_date >= to_date(p_last_date,'YYYY-MM-DD HH24:MI:SS') or p_last_date is null;    
     end if;    
@@ -493,9 +496,13 @@ BEGIN
                           AND    Trunc(SYSDATE) BETWEEN Trunc(Nvl(start_date_active, SYSDATE))
                                                     AND Trunc(Nvl(end_date_active, SYSDATE))) AS Period10Name__c,
                         REPLACE(NVL(STK.PTBL_P10,0),',','.') ProjectedBalance10__c,
-                        REPLACE(STK.SHOP_P10,',','.') ProjectedBalance10PbShop__c
+                        REPLACE(STK.SHOP_P10,',','.') ProjectedBalance10PbShop__c,
+                        NVL(STK.BALANCE__C,0) BALANCE__C,
+                        NVL(STK.EXPORTBALANCE__C,0) EXPORTBALANCE__C,
+                        NVL(STK.BALANCEPORTOBELLOSHOP__C,0) BALANCEPORTOBELLOSHOP__C
                         FROM TMP_PROJETADO_SALESFORCE STK
-						INNER JOIN (SELECT MEANING COD, LOOKUP_CODE ID FROM FND_LOOKUP_VALUES WHERE     language = USERENV ('LANG') AND enabled_flag = 'Y' AND lookup_type = 'ONT_DEPOSITOS_SALES_PB')DEP ON STK.DES_CD = DEP.COD
+						INNER JOIN (SELECT MEANING COD, LOOKUP_CODE ID FROM FND_LOOKUP_VALUES WHERE     language = USERENV ('LANG') AND enabled_flag = 'Y' AND lookup_type = 'ONT_DEPOSITOS_SALES_PB') DEP ON STK.DES_CD = DEP.COD
+                        where (last_update_date >= to_date(p_last_date,'YYYY-MM-DD HH24:MI:SS') or p_last_date is null)
                         Order by LAST_UPDATE_DATE asc offset l_page rows fetch next l_rows rows only
                     )  loop
                         l_item.put('LAST_UPDATE_DATE', prod.LAST_UPDATE_DATE);
@@ -504,6 +511,11 @@ BEGIN
                         l_item.put('WAREHOUSECODE__C', prod.WAREHOUSECODE__C);
                         l_item.put('DESCRICAODEPOSITO__C', prod.DESCRICAODEPOSITO__C);
                         l_item.put('NAME', prod.NAME);
+
+                        l_item.put('BALANCEPORTOBELLOSHOP__C', prod.BALANCEPORTOBELLOSHOP__C);
+                        l_item.put('BALANCE__C', prod.BALANCE__C);
+                        l_item.put('EXPORTBALANCE__C', prod.EXPORTBALANCE__C);
+
                         l_item.put('PERIOD01NAME__C', prod.PERIOD01NAME__C);
                         l_item.put('PROJECTEDBALANCE01__C', prod.PROJECTEDBALANCE01__C);
                         l_item.put('PROJECTEDBALANCE01PBSHOP__C', prod.PROJECTEDBALANCE01PBSHOP__C);
@@ -621,6 +633,7 @@ BEGIN
 										   0 AS STOCKFRACTION__C                    -- Percentual de ponta
 									  FROM apps.xxpb_estoque_api stk
 									  INNER JOIN (SELECT MEANING COD, LOOKUP_CODE ID FROM FND_LOOKUP_VALUES WHERE     language = USERENV ('LANG') AND enabled_flag = 'Y' AND lookup_type = 'ONT_DEPOSITOS_SALES_PB') DEP ON STK.COD_DEPOSITO = DEP.COD
+/*
 									UNION ALL
 									SELECT 1 AS TIPO, FLAG_EXC AS FLAG_EXC,
 										   LAST_UPDATE_DATE,
@@ -679,7 +692,9 @@ BEGIN
 															WHERE     COD_PRODUTO_ORA =
 																		 STK.COD_PRODUTO_ORA
 																  AND COD_DEPOSITO = STK.COD_DEPOSITO
-																  AND SALDO_DISPONIVEL > 0)))
+																  AND SALDO_DISPONIVEL > 0))
+*/
+                                                                  )
 							 WHERE (   (   balanceportobelloshop__c <> '0'
 										OR balance__c <> '0'
 										OR exportBalance__c <> '0')
